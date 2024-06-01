@@ -3,9 +3,6 @@ name: Trivy Scan
 on:
   workflow_call:
     inputs:
-      github-token:
-        required: true
-        type: string
       severity:
         required: false
         type: string
@@ -44,7 +41,7 @@ jobs:
       - name: Comment on PR with Trivy scan results
         if: failure()
         env:
-          GITHUB_TOKEN: ${{ inputs.github-token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           trivy_output=$(cat /path/to/trivy-output) # Ajuste o caminho para onde a saída do Trivy é salva
           gh pr comment ${{ github.event.pull_request.number }} --body "Trivy Scan Failed: $trivy_output"
