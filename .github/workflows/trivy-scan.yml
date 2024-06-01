@@ -1,0 +1,50 @@
+name: Trivy Scan
+
+on:
+  workflow_call:
+    inputs:
+      github-token:
+        required: true
+        type: string
+      severity:
+        required: false
+        type: string
+        default: HIGH,CRITICAL
+      ignore-unfixed:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        run: docker build -t myapp:latest .
+
+      - name: Run Trivy scan on local image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: myapp:latest
+          format: table
+          exit-code: 1
+          ignore-unfixed: ${{ inputs.ignore-unfixed }}
+          severity: ${{ inputs.severity }}
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh
+
+      - name: Comment on PR with Trivy scan results
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ inputs.github-token }}
+        run: |
+          trivy_output=$(cat /path/to/trivy-output) # Ajuste o caminho para onde a saída do Trivy é salva
+          gh pr comment ${{ github.event.pull_request.number }} --body "Trivy Scan Failed: $trivy_output"
